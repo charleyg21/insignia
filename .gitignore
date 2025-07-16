@@ -1,3 +1,4 @@
+
 # === Python ===
 __pycache__/
 *.py[cod]
@@ -54,4 +55,11 @@ Icon?
 gittoken.txt
 insigniaDB.tar.gz
 1-unique-signatures/
+
+insigniaDB.tar.gz
+db_seq/
+*.fna
+echo "insigniaDB.tar.gz" >> .gitignore
+echo "db_seq/" >> .gitignore
+echo "*.fna" >> .gitignore
 
