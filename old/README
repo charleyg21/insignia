@@ -1,0 +1,48 @@
+Insignia FTP README
+
+Contact: Adam Phillippy - amp [at] umiacs.umd.edu
+
+THESE FILES ARE PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
+WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+
+* IMPORTANT *
+Files in this directory are outdated. If you need new versions of
+these files for your research, please contact me.
+
+
+- species_sigs-yyyy-mm-dd.tar.gz
+
+Species-level signatures for most organisms (available bacteria and
+archaea). Contains files for each species, organized by GenBank
+taxonomy ID. The 3 longest stretches of consecutive 18mer signatures
+are given for each species. The signatures are filtered to include
+only those with 70 > gc% > 30.
+
+Files are in FastA format, however sequence data does not contain
+newlines. Headers are of the form:
+
+>GenBank_accession[start,end] signature_length organism_name
+
+Current version built on older database and may not contain as many
+sequences as the website. Signatures have not been screened against a
+RefSeq background, only against other bacteria and archaea.
+
+
+- organsism_sigs-yyyy-mm-dd.tar.gz
+
+Organism-level signatures for most organisms (available bacteria and
+archaea). Contains files for each organism, organized by GenBank
+taxonomy ID. The 3 longest stretches of consecutive 18mer signatures
+are given for each species. The signatures are filtered to include
+only those with 70 > gc% > 30.
+
+Files are in FastA format, however sequence data does not contain
+newlines. Headers are of the form:
+
+>GenBank_accession[start,end] signature_length organism_name
+
+Current version built on older database and may not contain as many
+sequences as the website. Signatures have not been screened against a
+RefSeq background, only against other bacteria and archaea.

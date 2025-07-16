@@ -1,0 +1,35 @@
+#!/usr/bin/perl
+
+
+use strict;
+
+if ( scalar (@ARGV) != 1 ) {
+    die "Usage: $0 FASTA\n";
+}
+
+open (FASTA, "<$ARGV[0]");
+
+my $tag;
+my $len;
+while (<FASTA>) {
+    chomp;
+
+    if ( /^>/ ) {
+        if ( defined $tag ) {
+            print "$tag\t$len\n";
+        }
+        ($tag) = /^>(\S+)/;
+        $len = 0;
+    } else {
+        if ( /\s/ ) {
+            die "ERROR: Whitespace found in FastA record\n";
+        }
+        $len += length;
+    }
+}
+
+if ( defined $tag ) {
+    print "$tag\t$len\n";
+}
+
+close (FASTA);
