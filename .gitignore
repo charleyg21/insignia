@@ -1,0 +1,57 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+venv/
+.envrc
+
+# === C/C++ Build Files ===
+*.o
+*.out
+*.a
+*.so
+*.exe
+
+# === Perl ===
+*.bs
+blib/
+Build
+_build/
+Makefile
+Makefile.old
+
+# === Node/Web ===
+node_modules/
+dist/
+build/
+npm-debug.log
+
+# === System Files ===
+.DS_Store
+Thumbs.db
+Icon?
+*.swp
+*.bak
+*.tmp
+
+# === Git ===
+*.orig
+*.rej
+*.patch
+
+# === Large Data Files ===
+*.tar.gz
+*.bz2
+*.zip
+*.7z
+*.rar
+*.db
+*.sqlite
+*.log
+
+# === Project Specific ===
+gittoken.txt
+insigniaDB.tar.gz
+1-unique-signatures/
+
