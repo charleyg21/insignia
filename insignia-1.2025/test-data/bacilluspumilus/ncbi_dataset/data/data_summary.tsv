@@ -1,0 +1,3 @@
+Organism Scientific Name	Organism Common Name	Organism Qualifier	Taxonomy id	Assembly Name	Assembly Accession	Source	Annotation	Level	Contig N50	Size	Submission Date	Gene Count	BioProject	BioSample
+Bacillus pumilus SAFR-032		strain: SAFR-032	315750	ASM1788v4	GCA_000017885.4	GenBank	NCBI Prokaryotic Genome Annotation Pipeline (PGAP)	Complete Genome	3704641	3704641	2016-03-15	3852	PRJNA20391	SAMN00253833
+Bacillus pumilus SAFR-032		strain: SAFR-032	315750	ASM1788v4	GCF_000017885.4	RefSeq	GCF_000017885.4-RS_2025_03_28	Complete Genome	3704641	3704641	2016-03-15	3777	PRJNA20391	SAMN00253833
