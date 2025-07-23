@@ -1,53 +1,57 @@
-#!/bin/sh
+#!/bin/bash
 
-BINDIR=.
+# Set variables
+ROOT=".."
+PROJECTS="$ROOT/projects"
+PROGRAMS="$ROOT/programs"
+TARGETS="$PROJECTS/targets.txt"
+BACKGROUNDS="$PROJECTS/backgrounds.txt"
 
-if (( $# < 5 )); then
-    echo "Usage: $0 DBPATH PREFIX MERLEN GBX REFID [TGTIDs ...]"
-    exit 1
+# Prompt for reference ID
+echo "[?] Available targets:"
+cut -f1 "$TARGETS"
+echo -n "[?] Enter reference ID (must match ID in targets.txt): "
+read REFID
+
+# Check if REFID exists
+if ! grep -q "^$REFID" "$TARGETS"; then
+  echo "❌ Reference ID '$REFID' not found in targets.txt"
+  exit 1
 fi
 
-opt_dbp=$1; shift
-opt_pre=$1; shift
-opt_len=$1; shift
-opt_gbx=$1; shift
-opt_ref=$1
-opt_tgt=$@
-opt_cov="${opt_dbp}/db_cov/${opt_ref}.cov"
+# Define file paths
+TGTFILE="$PROJECTS/${REFID}.tgt"
+BGXFILE="$PROJECTS/${REFID}.bgx"
+REFFILE="$PROJECTS/${REFID}.ref"
+SHRFILE="$PROJECTS/${REFID}.shr"
+UNIFILE="$PROJECTS/${REFID}.uni"
+SIGFILE="$PROJECTS/${REFID}.sig"
 
-out_ref="${opt_pre}.ref"
-out_tgt="${opt_pre}.tgt"
-out_bgx="${opt_pre}.bgx"
-out_uni="${opt_pre}.uni"
-out_shr="${opt_pre}.shr"
-out_sig="${opt_pre}.sig"
+# Build .tgt, .bgx, .ref
+echo "[INFO] Creating .tgt, .bgx, .ref"
+grep "^$REFID" "$TARGETS" > "$TGTFILE"
+grep -v "^$REFID" "$BACKGROUNDS" > "$BGXFILE"
+grep "^$REFID" "$BACKGROUNDS" > "$REFFILE"
 
-rm -f $out_ref $out_tgt $out_bgx $out_uni $out_shr $out_sig
+# Generate shared cover
+echo "[INFO] Generating shared k-mer match cover"
+cat "$PROJECTS/${REFID}_vs_"*.match | \
+"$PROGRAMS/mcover-intersect" -T "$TGTFILE" -B "$BGXFILE" > "$SHRFILE"
 
-awk "{if(\$2==\"${opt_ref}\"){print}}" $opt_dbp/db_seq/t.idx > $out_ref
+# Generate unique cover
+echo "[INFO] Generating union of all matches"
+cat "$PROJECTS/${REFID}_vs_"*.match | \
+"$PROGRAMS/mcover-union" -T "$TGTFILE" > "$UNIFILE"
 
-for tgt in $opt_tgt; do
-    awk "{if(\$2==\"${tgt}\"){print}}" $opt_dbp/db_seq/t.idx >> $out_tgt
-done
+# Generate final .sig file
+echo "[INFO] Generating final signature set"
+cat "$UNIFILE" | "$PROGRAMS/unique-mer" -k 100 > "$SIGFILE"
 
-#-- Exclude Targets from Background
-cp $out_tgt $out_bgx
-
-#-- Exclude GenBank RefSeq from Background
-if (( opt_gbx )); then
-    echo "gi|*|	0	0" >> $out_bgx
-fi
-
-$BINDIR/mcover-union -T $out_ref -X $out_bgx $opt_cov | \
-    $BINDIR/unique-mer -k $opt_len > $out_uni &
-
-$BINDIR/mcover-intersect -T $out_ref -B $out_tgt $opt_cov | \
-    $BINDIR/common-mer -k $opt_len > $out_shr &
-
-wait
-
-$BINDIR/kmer-intersect $out_uni $out_shr > $out_sig
-
-
-#-- Clean up
-rm -f $out_ref $out_tgt $out_bgx $out_uni $out_shr
+# Done
+echo "✅ Signature generation complete:"
+echo " - Reference: $REFFILE"
+echo " - Targets:   $TGTFILE"
+echo " - Background: $BGXFILE"
+echo " - Shared:    $SHRFILE"
+echo " - Unique:    $UNIFILE"
+echo " - Signatures: $SIGFILE"
