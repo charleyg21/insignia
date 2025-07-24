@@ -1,0 +1,4 @@
+SUBDIRS = \
+	FastaTools \
+	MatchCover \
+	Signature

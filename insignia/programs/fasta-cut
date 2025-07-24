@@ -1,0 +1,57 @@
+#!/usr/bin/perl
+
+
+use strict;
+
+if ( scalar (@ARGV) < 3 || scalar (@ARGV) > 5 ) {
+    die "Usage: $0 FASTA IDX ID [b] [e]\n";
+}
+
+my ($fasta, $idx, $sid, $b, $e) = @ARGV;
+my ($id, $tax, $len, $pos);
+
+open (IDX, "<$idx");
+while (<IDX>) {
+    ($id, $tax, $len, $pos) = split;
+    if ( $id eq $sid ) {
+        last;
+    }
+}
+close (IDX);
+
+if ( !$b || $b < 1 ) { $b = 1; }
+if ( !$e || $e > $len ) { $e = $len; }
+
+open (FASTA, "<$fasta");
+seek (FASTA, $pos, 0);
+
+$_ = <FASTA>;
+if ( !/^>(.+)/ ) {
+    die "ERROR: Bad seek in index\n";
+}
+
+if ( scalar (@ARGV) == 3 ) {
+    print;
+} else {
+    print ">[$b,$e]";
+    print "$1\n";
+}
+
+my $rec;
+while (<FASTA>) {
+    chomp;
+
+    if ( /^>/ ) {
+        last;
+    }
+
+    $rec .= $_;
+}
+
+my $l = 60;
+for ( my $i = $b - 1; $i < $e; $i += 60 ) {
+    if ( $e - $i < 60 ) { $l = $e - $i; }
+    print substr ($rec, $i, $l), "\n";
+}
+
+close (FASTA);
