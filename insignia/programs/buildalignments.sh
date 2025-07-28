@@ -24,11 +24,6 @@ for FILE in "${INS_FILES[@]}"; do
     awk '/^>/ {if (seq) {print seq "NNNNNNNNNN"}; seq=""; next} {seq = seq $0} END {print seq}' "$FILE" >> "$OUTFILE"
     mv "$OUTFILE" "$FILE"
   fi
-  
-  # Clean t.idx to keep only this header
-  ID=$(basename "$FILE" .ins.fna)
-  grep "^$ID" "$DBSEQ/t.idx" > "$DBSEQ/t.idx.tmp"
-  mv "$DBSEQ/t.idx.tmp" "$DBSEQ/t.idx"
 done
 
 # Get list of genome IDs

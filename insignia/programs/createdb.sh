@@ -42,10 +42,14 @@ for fna in $TESTDATA_DIR/*.fna; do
         mv "$merged" "$clean"
     fi
 
-    # Use the real header for naming
+    # Extract accession and clean header
     header=$(head -n 1 "$clean")
     accession=$(echo "$header" | cut -d' ' -f1 | sed 's/^>//')
-    cp "$clean" "$DBSEQ_DIR/${accession}${INS_SUFFIX}"
+    genus_species=$(echo "$header" | cut -d' ' -f2,3 | sed 's/ /_/g')
+
+    echo ">$accession $genus_species" > "$DBSEQ_DIR/${accession}${INS_SUFFIX}"
+    tail -n +2 "$clean" >> "$DBSEQ_DIR/${accession}${INS_SUFFIX}"
+
     echo "[INFO] Created: $DBSEQ_DIR/${accession}${INS_SUFFIX}"
 done
 
@@ -59,7 +63,7 @@ fi
 
 echo "[INFO] Building index CSV (accession + full header)"
 : > "$INDEXCSV"
-for f in "$DBSEQ_DIR"/*.ins.fna; do
+for f in "$TESTDATA_DIR"/*.clean.fna; do
     header=$(head -n 1 "$f")
     accession=$(echo "$header" | cut -d' ' -f1 | sed 's/^>//')
     echo -e "${accession}\t${header}" >> "$INDEXCSV"
@@ -74,3 +78,6 @@ echo "✅ All database files successfully built."
 echo "📁 Cleaned FASTAs: $TESTDATA_DIR/*$CLEAN_SUFFIX"
 echo "📁 Sequence DB:    $DBSEQ_DIR/*.ins.fna + $DBFILE"
 echo "📁 Index:          $INDEXCSV"
+
+# === FASTA index generation ===
+"$PROGRAMS/fasta-index" "$DBFILE" > "$DBSEQ_DIR/t.idx"
