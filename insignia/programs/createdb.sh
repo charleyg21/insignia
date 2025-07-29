@@ -81,3 +81,10 @@ echo "📁 Index:          $INDEXCSV"
 
 # === FASTA index generation ===
 "$PROGRAMS/fasta-index" "$DBFILE" > "$DBSEQ_DIR/t.idx"
+
+# === Generate targets.txt and backgrounds.txt from t.idx ===
+echo "[INFO] Creating targets.txt and backgrounds.txt from t.idx"
+cut -f1-3 "$DBSEQ_DIR/t.idx" > "$ROOT_DIR/projects/targets.txt"
+cp "$ROOT_DIR/projects/targets.txt" "$ROOT_DIR/projects/backgrounds.txt"
+echo "✅ targets.txt and backgrounds.txt created with 3 fields"
+
