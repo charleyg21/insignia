@@ -14,6 +14,10 @@ INDEXCSV="$DBSEQ_DIR/insigniaindex.csv"
 VERSIONLOG="$DBSEQ_DIR/insignia.version.log"
 BUILDLOG="$DBSEQ_DIR/insignia_build.log"
 
+# === CLEANUP OLD CLEAN.FNA FILES ===
+echo "[INFO] Removing old .clean.fna files from test-data/"
+rm -f "$TESTDATA_DIR"/*.clean.fna
+
 mkdir -p "$DBSEQ_DIR"
 
 echo "[INFO] Cleaning FASTA files and merging multi-sequence files"
@@ -87,4 +91,3 @@ echo "[INFO] Creating targets.txt and backgrounds.txt from t.idx"
 cut -f1-3 "$DBSEQ_DIR/t.idx" > "$ROOT_DIR/projects/targets.txt"
 cp "$ROOT_DIR/projects/targets.txt" "$ROOT_DIR/projects/backgrounds.txt"
 echo "✅ targets.txt and backgrounds.txt created with 3 fields"
-

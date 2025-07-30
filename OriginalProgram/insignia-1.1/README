@@ -1,0 +1,530 @@
+=== INSIGNIA README ===
+
+Website: http://insignia.cbcb.umd.edu
+Contact: amp@umiacs.umd.edu
+Version: 1.1
+ 
+Welcome to Insignia. Insignia is open source software. Please see the
+`COPYING' file for details.
+
+
+Contents
+--------
+
+(0) Introduction
+
+(1) Insignia Pipeline
+    (a) alignment
+    (b) signature identification
+
+(2) Data Formats
+    (a) Fasta
+    (b) Fasta Index
+    (c) MEMs
+    (d) Match Cover
+    (e) k-mer
+    (f) Insignia database
+
+(3) Programs / Algorithms
+    (a) common-mer
+    (b) kmer-intersect
+    (c) mcover-build
+    (d) mcover-intersect
+    (e) mcover-merge
+    (f) unique-mer
+
+(4) Utility scripts
+    (a) fasta-cut
+    (b) fasta-index
+    (c) fasta-select
+    (d) fasta-size
+    (e) kmer-seqs
+    (f) kmer2Fasta
+    (g) mcover-select
+    (h) mcover-index
+
+
+
+0. Introduction
+---------------
+
+    If you are interested in locally installing the Insignia software,
+    please contact us for assistance. The Insignia alignment pipeline
+    requires significant computing resources and a computing grid is
+    required. In contrast, once the alignment pipeline has been run,
+    the signature pipeline can be run on a desktop machine. If you
+    would only like to run the signature pipeline, it is possible to
+    obtain a pre-computed alignment database directly from us. We may
+    also be willing to compute custom signatures for unreleased
+    sequences.
+
+    INSTALL
+
+    ./configure
+    ./make
+    ./make install
+
+    Will create a 'bin' directory in the Insignia base dir with all
+    necessary programs.
+
+
+
+1. Insignia Pipeline
+--------------------
+
+    The Insignia pipeline is broken down into 2 separate, but related
+    components, the alignment pipeline and the signature pipeline. The
+    alignment pipeline is executed only when new sequence data is
+    available, and computes the match cover for the set of target
+    sequences. The signature pipeline is run whenever a user queries
+    the match cover data in search of signatures.
+
+    Note that any of the shell scripts rely heavily on the computing
+    setup at CBCB and will most likely require an overhaul to work in
+    any other environment. The C/C++ programs, however, represent the
+    core algorithms of Insignia and should be portable to all
+    computing enviornments.
+
+
+    1a. Alignment Pipeline
+
+    The alignment pipeline can be executed by running the
+    `mcover-grid' script. This script takes as input a target (TGT)
+    and background (BG) sequence Fasta file. It is expected that each
+    of these Fasta files has been priorly partitioned into manageable
+    chunks (~1 sequence per target file, and ~250MB per background
+    file), so that MUMmer will run with a reasonable memory
+    overhead. MUMmer requires about TGT*17+BG bytes of RAM for a
+    target file of size TGT bytes and background file of size BG
+    bytes. The partitioning should be carried out with the
+    `fasta-chop' command which will generate the chunks with the
+    expected names. `mcover-grid' will take "tg.Fasta" and "bg.Fasta"
+    as its input and expect to find the partition files "tgt.Fasta.1",
+    "tg.Fasta.2", "bg.Fasta.1", "bg.Fasta.2", etc. `mcover-grid' will
+    then launch as many Condor jobs as necessary (using runCmd) to
+    compute the necessary alignments and Match cover. A Match cover
+    file will be output for each target/background file pair. It is
+    suggested, but not required, that copies of the sequence data be
+    loaded onto each grid node's local hard drive to avoid network
+    file system issues caused by the massive amounts of data transfer
+    that will ensue.
+
+    <TGT> Un-partitioned target Fasta file. Should be in the same
+    directory as the partition files.
+
+    <BG> Un-partitioned background Fasta file. Should be in the same
+    directory as the partition files.
+
+    <MACHINES> A list of condor machine names to utilize.
+
+    IMPORTANT: The target sequences must be a subset of the background
+    sequences. That is to say, each target sequence must exist in both
+    the target and background Fasta files.
+
+    PORTABILITY: `mcover-grid' relies on the computing resources of
+    the CBCB. To run the alignment pipeline elsewhere, this script
+    will have to be modified appropriately. Most importantly, the
+    `runCmd' call will have to be replaced, and `mcover-build' called
+    directly (or with the appropriate job launcher).
+
+    Example preparation and execution of the alignment pipeline:
+
+    Inputs:
+    - tg.Fasta (target sequencs)
+    - bg.Fasta (background sequences)
+
+    Commands:
+    `fasta-chop tg.Fasta 20M'
+    `fasta-chop bg.Fasta 250M'
+    `mcover-grid tg.Fasta bg.Fasta wren00.umiacs.umd.edu wren01...'
+    `cat *.mcov > out.mcov'
+    
+    Outputs:
+    - out.mcov (match cover for all targets)
+
+
+    1b. Signature Pipeline
+
+    SIGNIFY
+    The signature pipeline can be executed by running the `signify'
+    script. This script executes the match cover set merging and
+    intersecting operations, and returns the a list of target-shared,
+    background-unique k-mers.
+
+    <DBPATH> File path of the directory containing the Insignia
+    database. The format of this database is described in section 2f.
+
+    <PREFIX> A prefix for all output files.
+
+    <MERLEN> The signature k-mer length. Minimum value is equal to
+    minimum match value passed to MUMmer in the alignment pipeline,
+    this is usually 18.
+
+    <GBX> 1 to exclude GenBank RefSeq from background, or 0 to
+    include RefSeq in background.
+
+    <REFID> The GenBank taxon ID of the reference organism. Signature
+    intervals will be returned relative to the reference coordinate
+    system.
+
+    <TGTIDs> List of GenBank taxon IDs for the target organisms.
+    Returne signatures will be conserved by the reference and all
+    target organisms and unique with respect to all other sequences
+    in the database.
+
+    Example execution of the signature pipeline:
+
+    Inputs:
+    - dbpath (path of the Insignia database)
+    - prefix (output prefix)
+    - merlen (signature length)
+    - refid  (reference taxonomy ID)
+    - tgtid  (target taxonomy ID)
+
+    Command:
+    `signify dbpath prefix merlen refid tgtid tgtid...'
+
+    Outputs:
+    - out.ref (reference sequence index)
+    - out.tgt (target sequence index)
+    - out.uni (unique k-mers)
+    - out.shr (shared k-mers)
+    - out.sig (signatures)
+
+
+    INSIGNIFY
+    A newer script `insignify' is similar to `signify' but operates
+    on files rather than a command line list. Also, it operates on
+    Insignia organism IDs rather than GenBank taxonomy IDs. The
+    organism IDs are the second column in both the t.idx file and the
+    t.map file. Signature output is to stdout in the .sig format.
+
+    <DBPATH> File path of the directory containing the Insignia
+    database. The format of this database is described in section 2f.
+
+    <MERLEN> The signature k-mer length. Minimum value is equal to
+    minimum match value passed to MUMmer in the alignment pipeline,
+    this is usually 18.
+
+    <TGT> Newline delimited list of target organism IDs. The first
+    organism ID in the file will be used as the reference organism.
+    Returne signatures will be conserved by the reference and all
+    target organisms and unique with respect to all other sequences
+    in the database.
+
+    <BGX> Newline delimieted list of genomes to exclude from the
+    background. Use organism ID `0' (zero) to exclude GenBank RefSeq
+    from the background.
+
+    Example execution of the signature pipeline:
+
+    Inputs:
+    - dbpath (path of the Insignia database)
+    - merlen (signature length)
+    - tgtids (file of target organism IDs)
+    - bgxids (file of background exclude IDs)
+    
+    Command:
+    `insignify dbpath merlen tgtids bgxids > out.sig'
+
+    Outputs:
+    - out.sig (signatures)
+
+
+
+2. Data Formats
+---------------
+
+    2a. Fasta
+
+    Sequence inputs should follow standard Fasta format. Header lines
+    must contain two whitespace delimited fields, a unique sequence
+    identifier and a common taxonmy identifier. All sequences must
+    have a unique sequence ID, and sequences from the same organism
+    should share the same taxonmy ID. The sequence ID should
+    immediately follow the '>' character, and the taxon ID should
+    follow the sequence ID after a whitespace delimiter. Both strings
+    and integers are acceptable IDs.
+
+    Example of 5 sequences from 2 organis ms, " gba" and "gbx" :
+
+    >gba:1 gba
+    acgtacgtacgtacgt
+    >gba:2 gba
+    acgtacgtacgtacgt
+    >gba:3 gba
+    acgtacgtacgtacgt
+    >gbx:1 gbx
+    acgtacgtacgtacgt
+    >gbx:2 gbx
+    acgtacgtacgtacgt
+
+
+    2b. Fasta Index
+
+    Since the alignment pipeline runs off of Fasta flat-files, the
+    Fasta files are indexed to provide fast lookups and parsing. The
+    `fasta-index' script takes the above Fasta file as input, and
+    produces an index file. The index lists one Fasta record per line,
+    is tab delimited, and comprised of the following columns: sequence
+    ID, taxon ID, sequence length, and file seek.  Entries from this
+    index are used later for specifying target and background
+    sequences to some of the Insignia algorithms such as
+    `mcover-merge' and `mcover-intersect'.
+
+    Example index for the above Fasta example:
+
+    gba:1   gba     16      0
+    gba:2   gba     16      28
+    gba:3   gba     16      56
+    gbx:1   gbx     16      84
+    gbx:2   gbx     16      112
+
+
+    2c. MEMs
+
+    Output of the `mummer' program produces a list of maximal exact
+    matches. In order to assure consistent output format, mummer
+    should always be run with the "-maxmatch -b -c -n -F"
+    options. Given these options, mummer will produce a 4-column,
+    whitespace delimited list of MEMs. For each pair of sequences
+    being matched (a reference and a query), a list of forward MEMs
+    will be output, followed by a list of reverse MEMs. A list of
+    forward MEMs will begin with a '>' character, followed by a space
+    and the sequence ID of the query. A list of reverse MEMs will
+    begin with a '>' character, followed by a space, the sequence ID
+    of the query, another space, and the word "Reverse". The list of
+    MEMs will be 1 MEM per line and 4 columns. The columns are the
+    sequence ID of the reference, the start of the match in the
+    reference, the start of the match in the query, and the length of
+    the match, in that order. Reverse MEMs are computed on the reverse
+    complement of the query sequence, but are reported in coordinates
+    relative to the original query sequence.
+
+    Example of all-vs-all matching of 2 sequences, A and B:
+
+    > A
+      A         1         1        24
+    > A Reverse
+      B         1        24        24
+    > B
+      B         1         1        24
+    > B Reverse
+      A         1        24        24
+
+
+    2d. Match Cover
+
+    The output of MUMmer is never stored explicitly in the MEM format
+    described above. Instead, it is compressed into a "Match Cover"
+    which requires less space to store and is easier to manipulate for
+    signature detection. A Match Cover is a collection of match
+    intervals for each target/background sequence pair. A single match
+    interval represents a subsequence of the target that exactly
+    matches the background sequence. The set of intervals is minimal,
+    meaning no interval equals or shadows any other. This greatly
+    reduces the match data by throwing away redundant information
+    caused by repeats. The format of this output is similar to the MEM
+    format. Each target/background pair gets a header line beginning
+    with a '>' and followed by its list of target intervals, 1 per
+    line. Each target interval is a pair consisting of a start
+    position in the target and length. The list of intervals always
+    reference the original target sequence and must be sorted by start
+    position.
+
+    Example of all-vs-all Match cover of 2 sequences, A and B:
+
+    >A B
+    1       24
+    >B A
+    1       24
+
+    Meaning the first 24bp of A match B, and the first 24bp of B match
+    A, but not necessarily on the forward strand.
+
+
+    2e. k-mer list
+
+    The final output of Insignia is often a list of target-shared,
+    background-unique k-mers, otherwise known as "signatures". The
+    signatures are output as a list of k-mer intervals. Each target
+    sequence will have a header beginning with a '>' character,
+    immediately followed by the sequence ID, followed by a space and
+    the k-mer length. Following the header line is a list of k-mer
+    intervals, 1 per line. Each interval is a pair consisting of a
+    start position in the target and the number of consecutive k-mers
+    from this point onward. Thus the intervals [p,c] contains exactly
+    c signatures with start positions between p and p+c-1. These c
+    signatures will cover the target from position p to p+c+k-2, where
+    k is the k-mer length.
+
+    Example of a 20-mer list for 2 sequences, A and B:
+
+    >A 20
+    1 5
+    >B 20
+    1 5
+    50 2
+
+    Meaning there are 5 20-mers beginning at positions 1..5 in
+    sequence A, 5 20-mers beginning at positions 1..5 in sequence B,
+    and 2 20-mers beginning at positions 50..51 in sequence B.
+
+
+    2f. Insignia Database
+
+    The Insignia database files are constructed automatically, but
+    some user intervention is required. It is organized into two
+    directories 'db_seq' and 'db_cov'. These directories must be
+    created in the main Insignia db directory.
+
+    'db_seq' contains the partitioned sequence files.
+    - t.fna   All target sequences in a single file.
+    - t.idx   Index of t.fna build using fasta-index.
+    - t.map   Mapping between gi, org_id, tax_id, org_name
+
+    'db_cov' contains the match cover data.
+    - *.cov   Match cover files organized by target taxonomy *.
+
+
+3. Programs / Algorithms
+------------------------
+
+    This section gives a (very) brief overview of what each program
+    does. Run any of these with the '-h' option to get a more detailed
+    description of their inputs and outputs.
+
+
+    3a. common-mer
+
+    match cover -> k-mer list
+    Takes the output of `mcover-intersect' as input and produces a
+    list of k-mers shared by all the target genomes.
+
+
+    3b. kmer-intersect
+
+    k-mer list + k-mer list -> k-mer list
+    Takes the output of `common-mer' and `unique-mer' and produces a
+    list of k-mers that are in both outputs, i.e. k-mers which are
+    both target-shared and background-unique.
+
+
+    3c. mcover-build
+
+    MEM list -> match cover
+    Takes the output of `mummer' (mummer -maxmatch -b -c -n -F) and
+    builds a match cover for either the reference sequences, or query
+    sequences, or both the reference and query sequences. Usually run
+    as a filter for mummer output, that is the mummer command pipes
+    directly into the stdin, because the raw mummer match files can be
+    enormous.
+
+
+    3d. mcover-intersect
+
+    MEM Cover -> match cover
+    Takes the output of `mcover-build' and intersects the specified
+    covers to produce a shared cover suitable for input to the
+    `common-mer' program. Essentially calculates regions of the target
+    genomes that are present in all other target genomes.
+
+
+    3e. mcover-merge
+
+    MEM Cover -> match cover
+    Takes the output of `mcover-build' and merges the specified covers
+    to produce a unique cover suitable for input to the `unique-mer'
+    program. Essentially calculates regions of the target genome that
+    are absent from all background genomes.
+
+
+    3f. unique-mer
+
+    match cover -> k-mer list
+    Takes the output of `mcover-merge' as input and produces a list of
+    k-mers that are unique to the target genomes, i.e. do not exist in
+    any of the background.
+
+
+
+4. Utilities
+------------
+
+    Unlike the programs, most utilities do not have a '-h'
+    option. Command line usage is available by running the script with
+    no arguments. These short comments will describe the command line
+    arguments for each script.
+
+
+    4a. fasta-chop
+
+    Partitions a Fasta file into chunks no larger than the specified
+    size.
+
+
+    4b. fasta-clean
+
+    Removes strange characters from a Fasta file and wraps all lines
+    at 60 characters.
+
+
+    4c. fasta-cut
+
+    Takes a Fasta file, Fasta Index (section 2b), and sequence ID, and
+    extracts the requested subsequence [b,e] from the sequence.
+
+
+    4d. fasta-index
+
+    Takes a Fasta file (section 1b) and creates a Fasta Index (section
+    2b) suitable for quick searching and parsing. If the Fasta file
+    omits taxonmy information and is from the NCBI RefSeq database, a
+    second argument can given specifying the "RefSeq Catalog" file
+    that specifies the sequence ID <-> taxonmy ID relation.
+
+
+    4e. fasta-select
+
+    Takes a Fasta file (section 1b), a Fasta Index (section 2b), and a
+    list of sequences IDs, and extracts the requested Fasta records.
+
+
+    4f. fasta-size
+
+    Takes a Fasta file (section 1b) and returns the size of each Fasta
+    record in the input.
+
+
+    4g. kmer-seqs, kmer-seqs2, kmer-seqs3
+
+    Takes a Fasta file (section 1b), Fasta Index (section 2b), and a
+    list of k-mers (section 1e) and returns the k-mer list with the
+    interval's DNA sequence appended to each line. Other numeric
+    versions output kmers in other formats.
+
+
+    4h. kmer2fasta
+
+    Takes a Fasta file (section 1b), Fasta Index (section 2b), and a
+    list of k-mers (section 1e) and returns a Fasta file with a record
+    for each k-mer interval's DNA sequence.
+
+
+    4i. mcover-select
+
+    Takes a match cover (section 1d), a match cover index (section
+    4h), and a list of sequence IDs and returns match covers for only
+    those sequences specified in the input list.
+
+
+    4j. mcover-index
+
+    Takes a match cover (section 1d) and creates a match cover index
+    (undocumented) suitable for quick searching and parsing. This
+    index is used as input for the `mcover-select' program (section
+    4g).
+
+
+February 2007
+<amp@umiacs.umd.edu>

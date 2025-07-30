@@ -1,0 +1,3 @@
+Organism Scientific Name	Organism Common Name	Organism Qualifier	Taxonomy id	Assembly Name	Assembly Accession	Source	Annotation	Level	Contig N50	Size	Submission Date	Gene Count	BioProject	BioSample
+Bacillus licheniformis		strain: ATCC 14580	1402	ASM3447892v1	GCA_034478925.1	GenBank	NCBI Prokaryotic Genome Annotation Pipeline (PGAP)	Complete Genome	4227253	4227253	2023-12-19	4379	PRJNA1037563	SAMN38186259
+Bacillus licheniformis		strain: ATCC 14580	1402	ASM3447892v1	GCF_034478925.1	RefSeq	GCF_034478925.1-RS_2025_03_02	Complete Genome	4227253	4227253	2023-12-19	4384	PRJNA1037563	SAMN38186259

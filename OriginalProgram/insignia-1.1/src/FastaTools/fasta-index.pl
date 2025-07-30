@@ -1,0 +1,70 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+if ( scalar (@ARGV) != 1 && scalar (@ARGV) != 2 ) {
+    die "Usage: $0 FASTA [CATALOG]\n";
+}
+
+my $haveCatalog = (scalar @ARGV == 2);
+
+my %gi2ti;
+if ( $haveCatalog ) {
+    my @cols;
+    open (CATALOG, "<$ARGV[1]");
+    while (<CATALOG>) {
+        @cols = split "\t";
+        $gi2ti{$cols[3]} = $cols[0];
+    }
+    close (CATALOG);
+}
+
+
+open (FASTA, "<$ARGV[0]");
+
+my ($len, $id, $oi);
+my $pos = tell (FASTA);
+my $spos = $pos;
+
+while (<FASTA>) {
+    chomp;
+
+    if ( /^>/ ) {
+
+        FlushIndex();
+
+        $len = 0;
+        $spos = $pos;
+        ($id, $oi) = split;
+        $id =~ s/^>//;
+        if ( !defined $oi ) {
+            $oi = "none";
+        }
+    } elsif ( /[^[:graph:]]/ ) {
+        die "ERROR: Invisible character found in FastA record\n$_\n";
+    } else {
+        $len += length;
+    }
+
+    $pos = tell (FASTA);
+}
+close (FASTA);
+
+FlushIndex();
+
+
+sub FlushIndex() {
+    if ( defined $id ) {
+        if ( $haveCatalog && $id =~ /gi\|(\d+)\|/ ) {
+            if ( exists ($gi2ti{$1}) ) {
+                print "$id\tti:", $gi2ti{$1}, "\t$len\t$spos\n";
+            }
+            else {
+                print STDERR "WARNING: skipping $id, no catalog entry\n";
+            }
+        }
+        else {
+            print "$id\t$oi\t$len\t$spos\n";
+        }
+    }
+}

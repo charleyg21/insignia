@@ -1,4 +1,0 @@
-
-Usage: ../programs/mcover-intersect [options] -T tg -B bg MCOVER
-   or  ../programs/mcover-intersect [options] -T tg -B bg < MCOVER
-
